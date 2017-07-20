@@ -1,10 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
 
-file(GLOB IMAGES
-   "${PROJECT_SOURCE_DIR}/layersvt/images/*"
-)
-file(COPY ${IMAGES} DESTINATION ${CMAKE_BINARY_DIR}/layersvt/images)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_definitions(-DVK_USE_PLATFORM_WIN32_KHR -DVK_USE_PLATFORM_WIN32_KHX -DWIN32_LEAN_AND_MEAN)
     set(DisplayServer Win32)
@@ -27,24 +22,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
        # TODO Add Wayland Support
        # add_definitions(-DVK_USE_PLATFORM_WAYLAND_KHR)
     endif()
-
-    if (BUILD_WSI_MIR_SUPPORT)
-       # TODO Add Mir Support
-       # add_definitions(-DVK_USE_PLATFORM_MIR_KHR)
-       # include_directories(${MIR_INCLUDE_DIR})
-    endif()
 else()
     message(FATAL_ERROR "Unsupported Platform!")
 endif()
 
-add_custom_target( generate_api_cpp DEPENDS api_dump.cpp )
-add_custom_target( generate_api_h DEPENDS api_dump_text.h )
-add_custom_target( generate_api_html_h DEPENDS api_dump_html.h )
-
 set(LAYER_JSON_FILES
-    VkLayer_api_dump
-    VkLayer_monitor
-    VkLayer_screenshot
     VkLayer_device_simulation
     )
 
@@ -98,7 +80,7 @@ else()
             )
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/staging-json/${config_file}.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/vulkan/explicit_layer.d)
     endforeach(config_file)
-    
+
 endif()
 
 if (WIN32)
@@ -156,11 +138,6 @@ else()
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpointer-arith")
 endif()
 
-#VulkanTools layers
-run_vk_xml_generate(api_dump_generator.py api_dump.cpp)
-run_vk_xml_generate(api_dump_generator.py api_dump_text.h)
-run_vk_xml_generate(api_dump_generator.py api_dump_html.h)
-
 # Layer Utils Library
 # For Windows, we use a static lib because the Windows loader has a fairly restrictive loader search
 # path that can't be easily modified to point it to the same directory that contains the layers.
@@ -172,10 +149,5 @@ else()
 endif()
 add_dependencies(VkLayer_utilsvt generate_helper_files)
 
-# VulkanTools layers
-add_vk_layer(monitor monitor.cpp ../layers/vk_layer_table.cpp)
-add_vk_layer(screenshot screenshot.cpp screenshot_parsing.h screenshot_parsing.cpp ../layers/vk_layer_table.cpp)
+# VulkanTools devsim layer
 add_vk_layer(device_simulation device_simulation.cpp ../layers/vk_layer_table.cpp ${JSONCPP_SOURCE_DIR}/jsoncpp.cpp)
-# generated
-add_vk_layer(api_dump api_dump.cpp ../layers/vk_layer_table.cpp)
-
